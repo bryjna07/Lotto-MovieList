@@ -10,7 +10,7 @@ import SnapKit
 
 final class LottoBallView: UIView {
     
-    let numberLabel: UILabel = {
+    private let numberLabel: UILabel = {
         let label = UILabel()
         label.font = .boldSystemFont(ofSize: 20)
         label.textAlignment = .center
@@ -24,13 +24,14 @@ final class LottoBallView: UIView {
         clipsToBounds = true
     }
     
+    //MARK: - Init
     init(title: String) {
         super.init(frame: .zero)
         numberLabel.text = title
         if let number = Int(title) {
             switch number {
             case 41...45:
-                backgroundColor = .green
+                backgroundColor = .systemGreen
             case 31...40:
                 backgroundColor = .gray
             case 21...30:
@@ -38,7 +39,7 @@ final class LottoBallView: UIView {
             case 11...20:
                 backgroundColor = .blue
             case 1...10:
-                backgroundColor = .yellow
+                backgroundColor = .systemYellow
             default:
                 backgroundColor = .black
             }
@@ -52,8 +53,10 @@ final class LottoBallView: UIView {
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
-    
-    private func configureUI() {
+}
+
+extension LottoBallView: ConfigureUI {
+    func configureUI() {
         addSubview(numberLabel)
         numberLabel.snp.makeConstraints {
             $0.edges.equalToSuperview()

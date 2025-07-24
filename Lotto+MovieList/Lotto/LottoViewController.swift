@@ -7,10 +7,11 @@
 
 import UIKit
 import SnapKit
+import Alamofire
 
 final class LottoViewController: UIViewController {
     
-    private let textField: UITextField = {
+    private lazy var textField: UITextField = {
         let tf = UITextField()
         tf.placeholder = "회차를 선택해주세요"
         tf.font = .systemFont(ofSize: 20)
@@ -18,6 +19,7 @@ final class LottoViewController: UIViewController {
         tf.layer.borderWidth = 1
         tf.layer.borderColor = UIColor.systemGray5.cgColor
         tf.layer.cornerRadius = 4
+        tf.inputView = pickerView
         tf.clipsToBounds = true
         return tf
     }()
@@ -46,7 +48,7 @@ final class LottoViewController: UIViewController {
     
     private let resultLabel: UILabel = {
         let label = UILabel()
-        label.text = "913회 당첨결과"
+        label.text = "1181회 당첨 결과"
         label.font = .systemFont(ofSize: 24, weight: .medium)
         label.textAlignment = .center
         return label
@@ -67,27 +69,79 @@ final class LottoViewController: UIViewController {
         return label
     }()
     
-    private let pickerView = UIPickerView()
-    private let roundNumbers = Array(1...1181)
+    private lazy var pickerView: UIPickerView = {
+        let picker = UIPickerView()
+        picker.dataSource = self
+        picker.delegate = self
+        return picker
+    }()
     
-    var numBox: [Int] = Array(1...45)
+    //MARK: - Data
+    private var roundNumbers: [Int] = []
+
+    private var numArray: [Int] = []
     
-    var numArray: [Int] = []
+    private var lotto: Lotto? {
+        didSet {
+            guard let lotto else { return }
+            dateLabel.text = lotto.drwNoDate
+            numArray = []
+            numArray.append(lotto.drwtNo1)
+            numArray.append(lotto.drwtNo2)
+            numArray.append(lotto.drwtNo3)
+            numArray.append(lotto.drwtNo4)
+            numArray.append(lotto.drwtNo5)
+            numArray.append(lotto.drwtNo6)
+            numArray.append(lotto.bnusNo)
+        }
+    }
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        let currentNumber = getCurrentNumber()
+        roundNumbers = Array(1...currentNumber).reversed()
+        
         configureHierarachy()
         configureLayout()
         configureView()
-        makeLotto()
+        callRequest(no: "\(currentNumber)")
     }
     
-    private func makeLotto() {
+    //MARK: - API
+    func getCurrentNumber() -> Int {
+        guard let first = DateFormatter.krDateFormatter.date(from: "20021207") else { return 1 }
+        var calendar = Calendar.current
+        calendar.timeZone = TimeZone(identifier: "Asia/Seoul") ?? .current
+        let interval = calendar.dateComponents([.day], from: first, to: Date()).day ?? 0
+        
+        let currentNumber = 1 + interval / 7
+        
+        return currentNumber
+    }
+    
+    private func callRequest(no: String = "1181") {
+        let url = "\(URL.lotto.baseURL)&drwNo=\(no)"
+  
+        AF.request(url, method: .get)
+            .validate(statusCode: 200..<300)
+            .responseDecodable(of: Lotto.self) { response in
+            switch response.result {
+            case .success(let lotto):
+                DispatchQueue.main.async { [weak self] in
+                    self?.lotto = lotto
+                    self?.makeLottoStack()
+                }
+            case .failure(let error):
+                print(error)
+            }
+        }
+    }
+    
+    private func makeLottoStack() {
         lottoStackView.arrangedSubviews.forEach {
             lottoStackView.removeArrangedSubview($0)
             $0.removeFromSuperview()
         }
-        numArray = numBox.shuffled().prefix(7).sorted()
         
         numArray[0...5].map {
             LottoBallView(title: String($0))
@@ -113,12 +167,16 @@ extension LottoViewController: UIPickerViewDataSource, UIPickerViewDelegate {
     }
 
     func pickerView(_ pickerView: UIPickerView, didSelectRow row: Int, inComponent component: Int) {
-        textField.text = "\(roundNumbers[row])"
-        makeLotto()
+        updateLabel(number: roundNumbers[row])
+        callRequest(no: "\(roundNumbers[row])")
         textField.resignFirstResponder()
     }
+    
+    private func updateLabel(number: Int) {
+        textField.text = "\(number)"
+        resultLabel.text = "\(number)회 당첨 결과"
+    }
 }
-
 
 extension LottoViewController: ViewDesignProtocol {
     
@@ -132,7 +190,6 @@ extension LottoViewController: ViewDesignProtocol {
         ].forEach {
             view.addSubview($0)
         }
-        
     }
     
     func configureLayout() {
@@ -170,8 +227,5 @@ extension LottoViewController: ViewDesignProtocol {
     
     func configureView() {
         view.backgroundColor = .white
-        pickerView.dataSource = self
-        pickerView.delegate = self
-        textField.inputView = pickerView
     }
 }

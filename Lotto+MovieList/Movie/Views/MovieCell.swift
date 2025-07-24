@@ -10,8 +10,6 @@ import SnapKit
 
 final class MovieCell: UITableViewCell {
     
-    static let id = "MovieCell"
-    
     private let rankNumberView: UIView = {
         let view = UIView()
         view.backgroundColor = .white
@@ -20,7 +18,6 @@ final class MovieCell: UITableViewCell {
     
     private let numberLabel: UILabel = {
         let label = UILabel()
-        label.text = "12"
         label.font = .systemFont(ofSize: 16, weight: .medium)
         label.textColor = .black
         label.textAlignment = .center
@@ -31,13 +28,11 @@ final class MovieCell: UITableViewCell {
         let label = UILabel()
         label.font = .systemFont(ofSize: 16, weight: .medium)
         label.textColor = .white
-        label.numberOfLines = 0
         return label
     }()
     
     private let dateLabel: UILabel = {
         let label = UILabel()
-        label.text = "dateeeee"
         label.font = .systemFont(ofSize: 14)
         label.textColor = .white
         return label
@@ -57,15 +52,19 @@ final class MovieCell: UITableViewCell {
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
-    
-    private func configureUIWithData() {
+}
+
+extension MovieCell: ConfigureUI {
+    func configureUIWithData() {
         guard let movie else { return }
-        nameLabel.text = movie.title
-        dateLabel.text = movie.releaseDate.formatDate()
+        numberLabel.text = movie.rank
+        nameLabel.text = movie.movieNm
+        dateLabel.text = movie.openDt
     }
     
-    private func configureUI() {
+    func configureUI() {
         backgroundColor = .lightGray
+        selectionStyle = .none
         
         rankNumberView.addSubview(numberLabel)
         

@@ -13,3 +13,8 @@ protocol ViewDesignProtocol: AnyObject {
     func configureLayout()
     func configureView()
 }
+
+@objc protocol ConfigureUI: AnyObject {
+    @objc optional func configureUIWithData()
+    func configureUI()
+}
